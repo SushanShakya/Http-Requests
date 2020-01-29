@@ -29,32 +29,27 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-// When you decide to use the demo data Dont forget to replace "_apiResponse.data" with "users"
-
-
 class _HomeState extends State<Home> {
-
-//  List<UserInfo> users; //uncomment
 
   UserDataService get service => GetIt.I<UserDataService>();
 
-// Comment this portion
   APIResponse<List<UserInfo>> _apiResponse;
-  bool _isLoading = false;
-  // till here
+
+  bool _isLoading;
+
+  int _currentPage = 0;
+
+  final PageController ctrl = new PageController(viewportFraction: 0.8);
+
+  bool isSingle = false;
 
   @override
   void initState() {
-// Uncomment this line to use demo data
-//    users = service.getUserInfo(); 
-
-    _fetchData(); // Comment it out
+    fetchUsersList();
     super.initState();
   }
 
-
-// To use the Demo data ..... Comment the following out
-  _fetchData() async {
+  fetchUsersList() async{
     setState(() {
       _isLoading = true;
     });
@@ -65,125 +60,205 @@ class _HomeState extends State<Home> {
       _isLoading = false;
     });
   }
-  // Till this point
 
+  fetchUser() async{
+    setState(() {
+      _isLoading = true;
+    });
+
+    _apiResponse = await service.getUser();
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text("REST API", style: TextStyle(color: Colors.black),),
         centerTitle: true,
-        leading: Icon(Icons.book),
         elevation: 0.0,
-        title: Text("User's list"),
+        backgroundColor: Colors.white,
       ),
 
       body: Builder(
-        builder: (context) {
+        builder: (_) {
 
           if(_isLoading) {
-            return Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(),);
           }
 
-          if(_apiResponse.error) {
+          if(_apiResponse.error){
             return Center(child: Text(_apiResponse.errorMessage),);
           }
 
-          return ListView.builder(
-              itemCount: _apiResponse.data.length,
-              itemBuilder: (context,index) {
-                return GestureDetector(
-                  onLongPress: () {
-                    Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => CreateUser(
-                          mode: Mode.Editing,
-                          firstName: "${_apiResponse.data[index].firstName}",
-                          lastName: "${_apiResponse.data[index].lastName}",
-                          email: "${_apiResponse.data[index].email}",
-                          avatar: "${_apiResponse.data[index].avatar}",
-                          empId: _apiResponse.data[index].userId,
-                        )
-                    ));
-                  },
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => SingleUserView(
-                          name: "${_apiResponse.data[index].firstName} ${_apiResponse.data[index].lastName}",
-                          email: "${_apiResponse.data[index].email}",
-                          avatar: "${_apiResponse.data[index].avatar}",
-                          empId: _apiResponse.data[index].userId,
-                        )
-                    ));
-                  },
-                  child: Container(
-                      height: 100.0,
-                      margin: EdgeInsets.symmetric(vertical: 5.0,horizontal: 20.0),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10.0),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black
-                            )
-                          ]
-                      ),
-                      child: Dismissible(
-                        key: ValueKey(_apiResponse.data[index].userId),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (direction) {
+          return PageView.builder(
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+              },
+              controller: ctrl,
+              itemCount: _apiResponse.data.length + 1,
+              itemBuilder: (context, index){
 
-                        },
-                        confirmDismiss: (direction) async{
-                          final result = await showDialog(
-                              context: context,
-                              builder: (context) => DeleteUser()
-                          );
-                          print(result);
-                          return result;
-                        },
-                        background: Container(
-                          color: Colors.brown,
-                          padding: EdgeInsets.only(right: 15.0),
-                          child: Align(child: Icon(Icons.delete_forever, color: Colors.white,),alignment: Alignment.centerRight,),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: <Widget>[
-                            _buildAvatar('${_apiResponse.data[index].avatar}'),
-                            Text('${_apiResponse.data[index].firstName} ${_apiResponse.data[index].lastName}')
-                          ],
-                        ),)
-                  ),
-                );
+                bool active = index == _currentPage;
+
+                return
+                  (index == 0)?
+                  _buildOptions(context)
+                      :
+                  _buildBody(
+                      active: active,
+                      avatar: _apiResponse.data[index - 1].avatar,
+                      empId: _apiResponse.data[index -1].userId,
+                      firstName: _apiResponse.data[index -1].firstName,
+                      lastName: _apiResponse.data[index-1].lastName,
+                      email: _apiResponse.data[index-1].email
+                  );
+
               }
           );
         },
-      ),
+      )
+    );
+  }
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostRequest()
-            )
-          );
-        },
-        child: Icon(Icons.person_add),
+  Widget _buildOptions(context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          _buildButton('team', "Users", () {
+            setState(() {
+              isSingle = false;
+              fetchUsersList();
+            });
+            showSnackBar(context, "Swipe left to see changes");
+          },
+            isSingle?Colors.transparent:Colors.teal
+          ),
+          SizedBox(height: 10.0,),
+          _buildButton('single', "SingleUser", () {
+            setState(() {
+              isSingle = true;
+              fetchUser();
+            });
+            showSnackBar(context, "Swipe left to see changes");
+          },
+              isSingle?Colors.teal:Colors.transparent
+          ),
+          SizedBox(height: 10.0,),
+          _buildButton('create', "CreateUser", () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => PostRequest()));
+          },
+              Colors.transparent
+          ),
+        ],
       ),
     );
   }
 
-   Widget _buildAvatar(String imagePath){
-    return Material(
-          elevation: 10.0,
-          shape: CircleBorder(),
-          child: CircleAvatar(
-            backgroundImage: NetworkImage(imagePath,),
-            radius: 40.0,
-          ),
-        );
+  Widget _buildButton(String image, String title, onPressed, color) {
+    return RaisedButton(
+      onPressed: onPressed,
+      color: color,
+      padding: EdgeInsets.all(8.0),
+      child: Row(
+        children: <Widget>[
+          Image.asset('images/$image.png', height: 70, width: 70,),
+          Text('#$title')
+        ],
+      ),
+    );
   }
 
+  Widget _buildBody({
+    bool active,
+    String avatar = "",
+    int empId = 0,
+    String firstName = "",
+    String lastName ="",
+    String email = ""
+  })
+  {
+
+    final double blur = active? 10:0;
+    final double offset = active?3:0;
+    final double top = active?30: 50;
+    final double bottom = active?30: 50;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeOutQuint,
+      margin: EdgeInsets.only(top: top, bottom: bottom, right: 20),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20.0),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black,
+                blurRadius: blur,
+                offset: Offset(0.0,offset)
+            ),
+          ]
+      ),
+
+      child: Container(
+        padding: EdgeInsets.all(10.0),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.0),
+            color: Colors.white
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            _buildAvatar(avatar),
+            _buildUserDetail("$firstName $lastName", "$email", empId)
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String imagePath){
+    return Material(
+      elevation: 10.0,
+      shape: CircleBorder(),
+      child: CircleAvatar(
+        backgroundImage: NetworkImage(imagePath,),
+        radius: 80.0,
+      ),
+    );
+  }
+
+  Widget _buildUserDetail(String name, String email, int empId) {
+    return Container(
+      height: 100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          Text("Employee id : $empId"),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(name, style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),),
+              Text(email),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showSnackBar(context, text){
+    final snackBar = SnackBar(
+      content: Text(text),
+      duration: Duration(milliseconds: 500),
+    );
+    Scaffold.of(context).showSnackBar(snackBar);
+  }
 }

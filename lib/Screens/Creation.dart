@@ -22,8 +22,12 @@ class _PostRequestState extends State<PostRequest> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Create a User"
+          "Create a User", style: TextStyle(color: Colors.black),
         ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        leading: GestureDetector(onTap: () {Navigator.of(context).pop();}, child: Icon(Icons.arrow_back_ios, color: Colors.black,),),
+        elevation: 0.0,
       ),
 
       body: Form(
@@ -50,42 +54,42 @@ class _PostRequestState extends State<PostRequest> {
       onPressed: () async{
       
           if(_formKey.currentState.validate()){
-              final user = UserInsert(
+
+//            setState(() {
+//            });
+
+            final user = UserInsert(
               name: _name.text,
               job: _job.text
           );
 
           final result = await service.createUser(user);
 
-          final text = result.error ? result.errorMessage : "Created";
+          final text = result.error ? result.errorMessage : "Yay !! You Successfully created it";
 
-          // Not Working !
-          // showDialog(
-          //   context: context,
-          //   builder: (_) => AlertDialog(
-          //     title:Text("Done"),
-          //     content: Text(text),
-          //     actions: <Widget>[
-          //       FlatButton(
-          //         child: Text("OK"),
-          //         onPressed: () {
-          //           Navigator.of(context).pop();
-          //         },
-          //       )
-          //     ],
-          //     )
-          // );
-
-          Navigator.pop(context);
+          showDialog(
+              context: context,
+            builder: (_) => AlertDialog(
+              title: Text("Done"),
+              content: Text(text),
+              actions: <Widget>[
+                FlatButton(
+                  child: Text("OK"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                )
+              ],
+            )
+          )
+            .then((data){
+              if(result.data) {
+                Navigator.of(context).pop();
+              }
+          });
         }
-        
-        // ?
-    
-        //     :
-        // print("Oops Something not right here");
-        
+
       },
-//      padding: EdgeInsets.all(15.0),
       child: Text(title,),
     );
   }

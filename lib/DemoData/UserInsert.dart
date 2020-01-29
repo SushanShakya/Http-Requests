@@ -1,10 +1,13 @@
+
+import 'package:flutter/foundation.dart';
+
 class UserInsert {
   String name;
   String job;
 
   UserInsert({ 
-     this.name, 
-     this.job
+     @required this.name,
+     @required this.job
     }
     );
 

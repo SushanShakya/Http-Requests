@@ -37,7 +37,7 @@ class UserDataService{
     );
   }
 
-  Future<APIResponse<UserInfo>> getUserSingle() {
+  Future<APIResponse<List<UserInfo>>> getUser() {
     return http.get(
       Uri.encodeFull("$API/api/users/2")
     )
@@ -47,17 +47,17 @@ class UserDataService{
          final item = jsonData["data"];
          final uData = UserInfo.fromJson(item);
 
-         return APIResponse<UserInfo>(
-           data: uData
+         return APIResponse<List<UserInfo>>(
+           data: [uData]
          );
        }
 
-       return APIResponse<UserInfo>(
+       return APIResponse<List<UserInfo>>(
            error: true,
          errorMessage: 'Unfortunately Something went wrong'
        );
     }).catchError(
-        (_)=> APIResponse<UserInfo>(error: true,errorMessage: 'Unfortunately Something went wrong')
+        (_)=> APIResponse<List<UserInfo>>(error: true,errorMessage: 'Unfortunately Something went wrong')
     );
   }
 
@@ -69,7 +69,7 @@ class UserDataService{
          .then((data) {
        if(data.statusCode == 201) {
          return APIResponse<bool>(
-           data: true 
+           data: true
          );
        }
 
@@ -95,7 +95,7 @@ class UserDataService{
 //
 //class UserDataService {
 //
-//  List<UserInfo> getUserInfo() {
+//  List<UserInfo> getUserList() {
 //    return [
 //      UserInfo(
 //          userId: 1,
@@ -114,6 +114,17 @@ class UserDataService{
 //          firstName: "Suskun",
 //          lastName: 'Shakya',
 //          email: 'sushaanshakya88@gmail.com'
+//      ),
+//    ];
+//  }
+//
+//  List<UserInfo> getUser() {
+//    return [
+//      UserInfo(
+//          userId: 1,
+//          firstName: "SusChan",
+//          lastName: 'Desh',
+//          email: 'sushaanshakya908@gmail.com'
 //      ),
 //    ];
 //  }
