@@ -8,6 +8,7 @@ Api Used -> [ReqRes](https://reqres.in)
 
 ## ScreenShots
 
-<img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">
-
+<pre>
+<img src = "ScreenShots/1.png" height = "300">      <img src = "ScreenShots/2.png" height = "300">      <img src = "ScreenShots/3.png" height = "300">        <img src = "ScreenShots/4.png" height = "300">
+</pre>
 
