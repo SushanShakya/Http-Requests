@@ -1,16 +1,13 @@
-# ScreenShots
+# Http Requests.
 
-## Main Screen
-<img src="ScreenShots/mainscreen.jpg" height = "200">
+    Beginner's First Try to Communicate with the REST API.\n
+    Beginner Project.\n
+    Messy Code.
 
-## Delete
-<img src="ScreenShots/delete.jpg" height = "200">
+Api Used -> [ReqRes](https://reqres.in)
 
-## AddUser
-<img src="ScreenShots/addUser.jpg" height = "200">
+## ScreenShots
 
-## Single User View
-<img src="ScreenShots/UserInfo.jpg" height = "200">
+<img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">        <img src = "ScreenShots/1.png" , height = "300">
 
-## Update User
-<img src="ScreenShots/UpdateUser.jpg" height = "200">
+
