@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:req_res/DemoData/demo_data.dart';
 import 'package:req_res/Screens/Creation.dart';
-import 'package:req_res/Screens/SingleUserDisplay.dart';
-import 'package:req_res/Screens/UserDelete.dart';
 import 'package:req_res/Services/api_response.dart';
 import 'package:req_res/Services/user_data_service.dart';
-import 'Screens/User Creation.dart';
 
 void setupLocator() {
   GetIt.instance.registerLazySingleton(() => UserDataService());
@@ -16,6 +13,7 @@ void main() {
   setupLocator();
   runApp(MaterialApp(
     title: "Req_Res",
+    debugShowCheckedModeBanner: false,
     theme: ThemeData(
       primaryColor: Colors.deepPurple,
       primarySwatch: Colors.deepPurple,
@@ -30,8 +28,10 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-
   UserDataService get service => GetIt.I<UserDataService>();
+
+  APIResponse<List<UserInfo>> _usersList;
+  APIResponse<List<UserInfo>> _user;
 
   APIResponse<List<UserInfo>> _apiResponse;
 
@@ -45,28 +45,18 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
-    fetchUsersList();
+    fetchData();
     super.initState();
   }
 
-  fetchUsersList() async{
+  fetchData() async {
     setState(() {
       _isLoading = true;
     });
 
-    _apiResponse = await service.getUserList();
-
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  fetchUser() async{
-    setState(() {
-      _isLoading = true;
-    });
-
-    _apiResponse = await service.getUser();
+    _usersList = await service.getUserList();
+    _apiResponse = _usersList;
+    _user = await service.getUser();
 
     setState(() {
       _isLoading = false;
@@ -76,54 +66,52 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("REST API", style: TextStyle(color: Colors.black),),
-        centerTitle: true,
-        elevation: 0.0,
-        backgroundColor: Colors.white,
-      ),
+        appBar: AppBar(
+          title: Text(
+            "REST API",
+            style: TextStyle(color: Colors.black),
+          ),
+          centerTitle: true,
+          elevation: 0.0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: Builder(
+          builder: (_) {
+            if (_isLoading) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
 
-      body: Builder(
-        builder: (_) {
+            if (_user.error || _usersList.error) {
+              return Center(
+                child: Text(_user.errorMessage??_usersList.errorMessage),
+              );
+            }
 
-          if(_isLoading) {
-            return Center(child: CircularProgressIndicator(),);
-          }
+            return PageView.builder(
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                controller: ctrl,
+                itemCount: _apiResponse.data.length + 1,
+                itemBuilder: (context, index) {
+                  bool active = index == _currentPage;
 
-          if(_apiResponse.error){
-            return Center(child: Text(_apiResponse.errorMessage),);
-          }
-
-          return PageView.builder(
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
+                  return (index == 0)
+                      ? _buildOptions(context)
+                      : _buildBody(
+                          active: active,
+                          avatar: _apiResponse.data[index - 1].avatar,
+                          empId: _apiResponse.data[index - 1].userId,
+                          firstName: _apiResponse.data[index - 1].firstName,
+                          lastName: _apiResponse.data[index - 1].lastName,
+                          email: _apiResponse.data[index - 1].email);
                 });
-              },
-              controller: ctrl,
-              itemCount: _apiResponse.data.length + 1,
-              itemBuilder: (context, index){
-
-                bool active = index == _currentPage;
-
-                return
-                  (index == 0)?
-                  _buildOptions(context)
-                      :
-                  _buildBody(
-                      active: active,
-                      avatar: _apiResponse.data[index - 1].avatar,
-                      empId: _apiResponse.data[index -1].userId,
-                      firstName: _apiResponse.data[index -1].firstName,
-                      lastName: _apiResponse.data[index-1].lastName,
-                      email: _apiResponse.data[index-1].email
-                  );
-
-              }
-          );
-        },
-      )
-    );
+          },
+        ));
   }
 
   Widget _buildOptions(context) {
@@ -136,28 +124,27 @@ class _HomeState extends State<Home> {
           _buildButton('team', "Users", () {
             setState(() {
               isSingle = false;
-              fetchUsersList();
+              _apiResponse = _usersList;
             });
             showSnackBar(context, "Swipe left to see changes");
-          },
-            isSingle?Colors.transparent:Colors.teal
+          }, isSingle ? Colors.transparent : Colors.teal),
+          SizedBox(
+            height: 10.0,
           ),
-          SizedBox(height: 10.0,),
           _buildButton('single', "SingleUser", () {
             setState(() {
               isSingle = true;
-              fetchUser();
+              _apiResponse = _user;
             });
             showSnackBar(context, "Swipe left to see changes");
-          },
-              isSingle?Colors.teal:Colors.transparent
+          }, isSingle ? Colors.teal : Colors.transparent),
+          SizedBox(
+            height: 10.0,
           ),
-          SizedBox(height: 10.0,),
           _buildButton('create', "CreateUser", () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => PostRequest()));
-          },
-              Colors.transparent
-          ),
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (context) => PostRequest()));
+          }, Colors.transparent),
         ],
       ),
     );
@@ -170,49 +157,46 @@ class _HomeState extends State<Home> {
       padding: EdgeInsets.all(8.0),
       child: Row(
         children: <Widget>[
-          Image.asset('images/$image.png', height: 70, width: 70,),
+          Image.asset(
+            'images/$image.png',
+            height: 70,
+            width: 70,
+          ),
           Text('#$title')
         ],
       ),
     );
   }
 
-  Widget _buildBody({
-    bool active,
-    String avatar = "",
-    int empId = 0,
-    String firstName = "",
-    String lastName ="",
-    String email = ""
-  })
-  {
-
-    final double blur = active? 10:0;
-    final double offset = active?3:0;
-    final double top = active?30: 50;
-    final double bottom = active?30: 50;
+  Widget _buildBody(
+      {bool active,
+      String avatar = "",
+      int empId = 0,
+      String firstName = "",
+      String lastName = "",
+      String email = ""}) {
+    // final double blur = active? 10:0;
+    // final double offset = active?3:0;
+    final double top = active ? 50 : 120;
+    final double bottom = active ? 50 : 120;
 
     return AnimatedContainer(
       duration: Duration(milliseconds: 500),
       curve: Curves.easeOutQuint,
       margin: EdgeInsets.only(top: top, bottom: bottom, right: 20),
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20.0),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black,
-                blurRadius: blur,
-                offset: Offset(0.0,offset)
-            ),
-          ]
+        
+        // border: Border.all(),
       ),
-
-      child: Container(
-        padding: EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.0),
-            color: Colors.white
+      child: Card(
+        elevation: 10.0,
+        // color: Colors.blue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0)
         ),
+        // padding: EdgeInsets.all(10.0),
+        // decoration: BoxDecoration(
+        //     borderRadius: BorderRadius.circular(10.0), color: Colors.white),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
@@ -224,12 +208,14 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget _buildAvatar(String imagePath){
+  Widget _buildAvatar(String imagePath) {
     return Material(
       elevation: 10.0,
       shape: CircleBorder(),
       child: CircleAvatar(
-        backgroundImage: NetworkImage(imagePath,),
+        backgroundImage: NetworkImage(
+          imagePath,
+        ),
         radius: 80.0,
       ),
     );
@@ -245,7 +231,10 @@ class _HomeState extends State<Home> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text(name, style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),),
+              Text(
+                name,
+                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+              ),
               Text(email),
             ],
           ),
@@ -254,7 +243,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void showSnackBar(context, text){
+  void showSnackBar(context, text) {
     final snackBar = SnackBar(
       content: Text(text),
       duration: Duration(milliseconds: 500),

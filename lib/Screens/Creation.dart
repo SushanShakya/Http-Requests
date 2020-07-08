@@ -18,6 +18,13 @@ class _PostRequestState extends State<PostRequest> {
   TextEditingController _job = TextEditingController();
   
   @override
+  void dispose() {
+    _name.dispose();
+    _job.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -51,6 +58,7 @@ class _PostRequestState extends State<PostRequest> {
   Widget _buildButton(String title) {
     return RaisedButton(
       color: Colors.teal,
+      padding: EdgeInsets.all(20.0),
       onPressed: () async{
       
           if(_formKey.currentState.validate()){
